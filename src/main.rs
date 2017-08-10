@@ -1,9 +1,9 @@
 extern crate image;
 extern crate mazes;
 
-use std::env;
+use std::{env, fmt};
 use std::path::Path;
-use std::time::Instant;
+use std::time::{Instant, Duration};
 
 use image::Luma;
 use mazes::*;
@@ -23,6 +23,22 @@ fn main() {
     }
 }
 
+struct DisplayDuration(pub Duration);
+
+impl fmt::Display for DisplayDuration {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let mins = self.0.as_secs() / 60;
+        let secs = self.0.as_secs() % 60;
+        let nanos = self.0.subsec_nanos();
+
+        if mins > 0 {
+            write!(f, "{} m {}.{}s", mins, secs, nanos)
+        } else {
+            write!(f, "{}.{}s", secs, nanos)
+        }
+    }
+}
+
 fn run<P: AsRef<Path>>(path: P, out: P) -> Result<(), String> {
     let mut img = image::open(path).map_err(|e| format!("{}", e))?.to_luma();
     let maze = img.pixels()
@@ -37,7 +53,7 @@ fn run<P: AsRef<Path>>(path: P, out: P) -> Result<(), String> {
     let res = mazes::solve(&maze);
     let time = Instant::now()-time;
 
-    println!("Time taken: {}m{}.{}s", time.as_secs() / 60, time.as_secs() % 60, time.subsec_nanos());
+    println!("Time taken: {}", DisplayDuration(time));
     let (length, path) = res.ok_or_else(|| "No solution".to_owned())?;
 
     println!("Solution length: {}", length);
