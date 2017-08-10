@@ -24,11 +24,12 @@ impl Maze {
         }
         self.points.get_mut(x + y * self.width)
     }
-    pub fn get_entrance(&self) -> usize {
-        self.points.iter().take(self.width).position(|&p| !p).unwrap()
+    pub fn get_entrance(&self) -> (usize, usize) {
+        (self.points.iter().take(self.width).position(|&p| !p).unwrap(), 0)
     }
-    pub fn get_exit(&self) -> usize {
-        self.width - 1 - self.points.iter().rev().take(self.width).position(|&p| !p).unwrap()
+    pub fn get_exit(&self) -> (usize, usize) {
+        (self.width - 1 - self.points.iter().rev().take(self.width).position(|&p| !p).unwrap(),
+            self.height() - 1)
     }
     #[deprecated]
     pub fn is_node(&self, x: usize, y: usize) -> bool {
@@ -56,8 +57,12 @@ impl Maze {
         }
         ret
     }
+    #[inline]
+    fn height(&self) -> usize {
+        self.points.len() / self.width
+    }
     pub fn dimensions(&self) -> (usize, usize) {
-        (self.width, self.points.len() / self.width)
+        (self.width, self.height())
     }
 }
 
@@ -74,8 +79,14 @@ impl IndexMut<(usize, usize)> for Maze {
     }
 }
 
-#[derive(Ord, Eq, PartialEq, PartialOrd, Debug, Clone)]
+#[derive(Hash, Ord, Eq, PartialEq, PartialOrd, Debug, Clone)]
 pub struct Point (pub usize, pub usize);
+
+impl From<(usize, usize)> for Point {
+    fn from((x, y): (usize, usize)) -> Self {
+        Point(x, y)
+    }
+}
 
 impl Point {
     pub fn neighbours(&self, maze: &Maze) -> Vec<Point>{

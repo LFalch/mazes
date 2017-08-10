@@ -3,6 +3,7 @@ extern crate mazes;
 
 use std::env;
 use std::path::Path;
+use std::time::Instant;
 
 use image::Luma;
 use mazes::*;
@@ -30,11 +31,16 @@ fn run<P: AsRef<Path>>(path: P, out: P) -> Result<(), String> {
         .finish(img.width() as usize).map_err(|e| format!("{:?}", e))?;
 
     let (w, h) = maze.dimensions();
-    let start = Point(maze.get_entrance(), 0);
-    let end = Point(maze.get_exit(), h-1);
     println!("Maze is {}x{}", w, h);
 
-    let path = mazes::a_star(start, end, maze).ok_or_else(|| "No solution".to_owned())?;
+    let time = Instant::now();
+    let res = mazes::solve(&maze);
+    let time = Instant::now()-time;
+
+    println!("Time taken: {}m{}.{}s", time.as_secs() / 60, time.as_secs() % 60, time.subsec_nanos());
+    let (length, path) = res.ok_or_else(|| "No solution".to_owned())?;
+
+    println!("Solution length: {}", length);
 
     for Point(x, y) in path.into_iter() {
         img.put_pixel(x as u32, y as u32, Luma{data: [127]});
