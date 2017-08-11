@@ -4,7 +4,7 @@ use std::cmp::Ordering;
 use std::collections::{BinaryHeap, HashMap};
 use std::collections::hash_map::Entry::*;
 
-fn heuristic(p: &Point, goal: &Point) -> usize {
+fn heuristic(p: &Point, goal: &Point) -> Unit {
     let &Point(x, y) = p;
     let &Point(i, j) = goal;
 
@@ -12,7 +12,7 @@ fn heuristic(p: &Point, goal: &Point) -> usize {
 }
 
 #[inline]
-fn pos_diff(a: usize, b: usize) -> usize {
+fn pos_diff(a: Unit, b: Unit) -> Unit {
     if a > b {
         a - b
     } else {
@@ -21,9 +21,9 @@ fn pos_diff(a: usize, b: usize) -> usize {
 }
 
 struct AStarNode {
-    f_cost: usize,
+    f_cost: Unit,
     point: Point,
-    g_cost: usize
+    g_cost: Unit
 }
 
 impl PartialEq for AStarNode {
@@ -46,11 +46,11 @@ impl Ord for AStarNode {
     }
 }
 
-pub fn solve(maze: &Maze) -> Option<(usize, Vec<Point>)> {
+pub fn solve(maze: &Maze) -> Option<(Unit, Vec<Point>)> {
     let start = maze.get_entrance().into();
     let end = maze.get_exit().into();
 
-    let mut closed_set = HashMap::<Point, (Point, usize)>::new();
+    let mut closed_set = HashMap::<Point, (Point, Unit)>::new();
     let mut open_set = BinaryHeap::new();
     open_set.push(AStarNode{
         f_cost: heuristic(&start, &end),

@@ -41,19 +41,19 @@ impl fmt::Display for DisplayDuration {
 
 fn run<P: AsRef<Path>>(path: P, out: P) -> Result<(), String> {
     let mut img = image::open(path).map_err(|e| format!("{}", e))?.to_luma();
-    let maze = img.pixels()
-        .map(|p| p.data[0] < 0x7f)
-        .collect::<MazeBuilder>()
-        .finish(img.width() as usize).map_err(|e| format!("{:?}", e))?;
+    let res;
+    {
+        let maze = Maze::new(&img).map_err(|e| format!("{:?}", e))?;
 
-    let (w, h) = maze.dimensions();
-    println!("Maze is {}x{}", w, h);
+        let (w, h) = maze.dimensions();
+        println!("Maze is {}x{}", w, h);
 
-    let time = Instant::now();
-    let res = mazes::solve(&maze);
-    let time = Instant::now()-time;
+        let time = Instant::now();
+        res = mazes::solve(&maze);
 
-    println!("Time taken: {}", DisplayDuration(time));
+        let time = Instant::now()-time;
+        println!("Time taken: {}", DisplayDuration(time));
+    }
     let (length, path) = res.ok_or_else(|| "No solution".to_owned())?;
 
     println!("Solution length: {}", length);

@@ -1,118 +1,82 @@
-use std::iter::FromIterator;
-use std::ops::{Index, IndexMut};
+extern crate image;
+
+use image::GrayImage;
 
 mod a_star;
 
 pub use a_star::*;
 
-#[derive(Debug, Clone)]
-pub struct Maze {
-    width: usize,
-    points: Vec<bool>
+pub type Unit = u32;
+
+#[inline]
+fn walk(p: &u8) -> bool {
+    // If a pixel is considered walkable
+    p >= &127
 }
 
-impl Maze {
-    pub fn get(&self, x: usize, y: usize) -> Option<&bool> {
-        if x >= self.width {
-            return None;
+#[derive(Debug, Eq, PartialEq, Clone, Copy)]
+pub enum MazeCreationError {
+    TooManyEntrances,
+    TooManyExits
+}
+
+#[derive(Debug, Clone)]
+pub struct Maze<'a> {
+    img: &'a GrayImage
+}
+
+impl<'a> Maze<'a> {
+    pub fn new(maze_image: &'a GrayImage) -> Result<Self, MazeCreationError> {
+        let width = maze_image.width() as usize;
+        if maze_image.iter().take(width).cloned().filter(walk).count() != 1 {
+            return Err(MazeCreationError::TooManyEntrances)
         }
-        self.points.get(x + y * self.width)
-    }
-    pub fn get_mut(&mut self, x: usize, y: usize) -> Option<&mut bool> {
-        if x >= self.width {
-            return None;
+        if maze_image.iter().rev().take(width).cloned().filter(walk).count() != 1 {
+            return Err(MazeCreationError::TooManyExits)
         }
-        self.points.get_mut(x + y * self.width)
+        // Doesn't check bounding, but unbounded mazes don't actually break anything,
+        // the sides will just work like walls. - Entrances and exits _could_ be treated similarly.
+        Ok(Maze {
+            img: maze_image
+        })
     }
-    pub fn get_entrance(&self) -> (usize, usize) {
-        (self.points.iter().take(self.width).position(|&p| !p).unwrap(), 0)
+    pub fn is_walkable(&self, point: &Point) -> bool {
+        let &Point(x, y) = point;
+        if x >= self.img.width() || y >= self.img.height() {
+            return false;
+        }
+        let ret = walk(&self.img.get_pixel(x, y).data[0]);
+        ret
     }
-    pub fn get_exit(&self) -> (usize, usize) {
-        (self.width - 1 - self.points.iter().rev().take(self.width).position(|&p| !p).unwrap(),
-            self.height() - 1)
+    pub fn get_entrance(&self) -> Point {
+        let w = self.img.width() as usize;
+        Point(self.img.iter().take(w).position(walk).unwrap() as Unit, 0)
+    }
+    pub fn get_exit(&self) -> Point {
+        let (w, h) = self.dimensions();
+        Point(w-1 - self.img.iter().rev().take(w as usize).position(walk).unwrap() as Unit, h - 1)
     }
     #[inline]
-    fn height(&self) -> usize {
-        self.points.len() / self.width
-    }
-    pub fn dimensions(&self) -> (usize, usize) {
-        (self.width, self.height())
-    }
-}
-
-impl Index<(usize, usize)> for Maze {
-    type Output = bool;
-    fn index(&self, (x, y): (usize, usize)) -> &bool {
-        self.get(x, y).unwrap()
-    }
-}
-
-impl IndexMut<(usize, usize)> for Maze {
-    fn index_mut(&mut self, (x, y): (usize, usize)) -> &mut bool {
-        self.get_mut(x, y).unwrap()
+    pub fn dimensions(&self) -> (Unit, Unit) {
+        self.img.dimensions()
     }
 }
 
 #[derive(Hash, Ord, Eq, PartialEq, PartialOrd, Debug, Clone)]
-pub struct Point (pub usize, pub usize);
-
-impl From<(usize, usize)> for Point {
-    fn from((x, y): (usize, usize)) -> Self {
-        Point(x, y)
-    }
-}
+pub struct Point (pub Unit, pub Unit);
 
 impl Point {
-    pub fn neighbours(&self, maze: &Maze) -> Vec<Point>{
-        let mut poses = vec![(self.0+1, self.1), (self.0, self.1+1)];
+    pub fn neighbours(&self, maze: &Maze) -> std::vec::IntoIter<Point> {
+        let mut poses = vec![Point(self.0+1, self.1), Point(self.0, self.1+1)];
         if self.0 > 0 {
-            poses.push((self.0-1, self.1));
+            poses.push(Point(self.0-1, self.1));
         }
         if self.1 > 0 {
-            poses.push((self.0, self.1-1));
+            poses.push(Point(self.0, self.1-1));
         }
+        poses.retain(|p| maze.is_walkable(p));
+
         poses
             .into_iter()
-            .map(|(x, y)| Point(x, y))
-            .filter(|&Point(x, y)| !(maze.get(x, y).cloned().unwrap_or(true)))
-            .collect()
-    }
-}
-
-#[derive(Debug, Clone)]
-pub struct MazeBuilder {
-    points: Vec<bool>
-}
-
-impl FromIterator<bool> for MazeBuilder {
-    fn from_iter<T>(iter: T) -> Self where T: IntoIterator<Item=bool> {
-        MazeBuilder{
-            points: iter.into_iter().collect()
-        }
-    }
-}
-
-#[derive(Debug, Copy, Clone)]
-pub enum MazeError {
-    NotOneEntrance,
-    NotOneExit,
-    NotBounded
-}
-
-impl MazeBuilder {
-    pub fn finish(self, width: usize) -> Result<Maze, MazeError> {
-        let MazeBuilder{points} = self;
-        assert!(points.len() % width == 0);
-
-        if points.iter().take(width).filter(|p| !**p).count() != 1 {
-            Err(MazeError::NotOneEntrance)
-        } else if points.iter().rev().take(width).filter(|p| !**p).count() != 1 {
-            Err(MazeError::NotOneExit)
-        } else if points.iter().enumerate()
-            .filter(|&(i, &p)| (i % width == 0 || (i+1) % width == 0) && !p).count() != 0 {
-            Err(MazeError::NotBounded)
-        } else {
-            Ok(Maze{points, width})
-        }
     }
 }
