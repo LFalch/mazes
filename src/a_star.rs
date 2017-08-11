@@ -70,7 +70,7 @@ pub fn solve(maze: &Maze) -> Option<(Unit, Vec<Point>)> {
             return Some((g_cost, path))
         }
 
-        // If this node also exists with a lower G cost, skip this one
+        // If this node already exists with a lower G cost, skip it
         if let Some(&(_, g)) = closed_set.get(&point) {
             if g_cost > g {
                 continue
@@ -78,28 +78,23 @@ pub fn solve(maze: &Maze) -> Option<(Unit, Vec<Point>)> {
         }
         for neighbour in point.neighbours(&maze) {
             let g_cost = g_cost + 1;
-            let push_to_open_set;
 
             match closed_set.entry(neighbour.clone()) {
                 Vacant(e) => {
                     e.insert((point.clone(), g_cost));
-                    push_to_open_set = true;
                 }
                 Occupied(mut e) => if e.get().1 > g_cost {
                     e.insert((point.clone(), g_cost));
-                    push_to_open_set = true;
                 } else {
-                    push_to_open_set = false;
+                    continue;
                 }
             }
 
-            if push_to_open_set {
-                open_set.push(AStarNode{
-                    f_cost: g_cost + heuristic(&neighbour, &end),
-                    g_cost,
-                    point: neighbour
-                })
-            }
+            open_set.push(AStarNode{
+                f_cost: g_cost + heuristic(&neighbour, &end),
+                g_cost,
+                point: neighbour
+            })
         }
     }
 
