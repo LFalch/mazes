@@ -31,32 +31,6 @@ impl Maze {
         (self.width - 1 - self.points.iter().rev().take(self.width).position(|&p| !p).unwrap(),
             self.height() - 1)
     }
-    #[deprecated]
-    pub fn is_node(&self, x: usize, y: usize) -> bool {
-        if self[(x, y)] {
-            return false
-        }
-        let (_, height) = self.dimensions();
-        if y == 0 || y == height-1 {
-            return true;
-        }
-        let mut ret = false;
-
-        if !self[(x-1, y)] {
-            ret = true;
-        }
-        if !self[(x+1, y)] {
-            ret = !ret;
-        }
-        if ret {return true}
-        if !self[(x, y-1)] {
-            ret = true;
-        }
-        if !self[(x, y+1)] {
-            ret = !ret;
-        }
-        ret
-    }
     #[inline]
     fn height(&self) -> usize {
         self.points.len() / self.width
