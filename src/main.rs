@@ -32,9 +32,9 @@ impl fmt::Display for DisplayDuration {
         let nanos = self.0.subsec_nanos();
 
         if mins > 0 {
-            write!(f, "{} m {}.{}s", mins, secs, nanos)
+            write!(f, "{} m {}.{:09}s", mins, secs, nanos)
         } else {
-            write!(f, "{}.{}s", secs, nanos)
+            write!(f, "{}.{:09}s", secs, nanos)
         }
     }
 }
@@ -59,7 +59,7 @@ fn run<P: AsRef<Path>>(path: P, out: P) -> Result<(), String> {
     println!("Solution length: {}", length);
 
     for Point(x, y) in path.into_iter() {
-        img.put_pixel(x as u32, y as u32, Luma{data: [127]});
+        img.put_pixel(x, y, Luma{data: [128]});
     }
 
     img.save(out).map_err(|e| format!("{}", e))?;
