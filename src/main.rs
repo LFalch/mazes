@@ -1,3 +1,5 @@
+#![warn(trivial_casts)]
+
 extern crate image;
 extern crate mazes;
 
@@ -19,7 +21,7 @@ fn main() {
 
     match run(img, &out) {
         Ok(()) => (),
-        Err(err) => eprintln!("Error: {}", err)
+        Err(err) => eprintln!("Error: {}", err),
     }
 }
 
@@ -51,7 +53,7 @@ fn run<P: AsRef<Path>>(path: P, out: P) -> Result<(), String> {
         let time = Instant::now();
         res = mazes::solve(&maze);
 
-        let time = Instant::now()-time;
+        let time = Instant::now() - time;
         println!("Time taken: {}", DisplayDuration(time));
     }
     let (length, path) = res.ok_or_else(|| "No solution".to_owned())?;
@@ -59,7 +61,7 @@ fn run<P: AsRef<Path>>(path: P, out: P) -> Result<(), String> {
     println!("Solution length: {}", length);
 
     for Point(x, y) in path.into_iter() {
-        img.put_pixel(x, y, Luma{data: [128]});
+        img.put_pixel(x, y, Luma { data: [128] });
     }
 
     img.save(out).map_err(|e| format!("{}", e))?;
