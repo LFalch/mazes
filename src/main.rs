@@ -8,10 +8,10 @@ use image::Luma;
 use mazes::*;
 
 fn main() {
-    let args: Vec<_> = env::args().skip(1).collect();
+    let mut args = env::args().skip(1);
 
-    let img = &args[0];
-    let out = args.get(1).cloned().unwrap_or_else(|| {
+    let img = args.next().unwrap();
+    let out = args.next().unwrap_or_else(|| {
         let index = img.rfind('.').unwrap();
         img[..index].to_owned() + "_solution.png"
     });
@@ -38,8 +38,8 @@ impl fmt::Display for DisplayDuration {
     }
 }
 
-fn run<P: AsRef<Path>>(path: P, out: P) -> Result<(), String> {
-    let mut img = image::open(path).map_err(|e| format!("{}", e))?.to_luma();
+fn run(path: impl AsRef<Path>, out: impl AsRef<Path>) -> Result<(), String> {
+    let mut img = image::open(path).map_err(|e| format!("{}", e))?.to_luma8();
     let res;
     {
         let maze = Maze::new(&img).map_err(|e| format!("{:?}", e))?;
@@ -58,7 +58,7 @@ fn run<P: AsRef<Path>>(path: P, out: P) -> Result<(), String> {
     println!("Solution length: {}", length);
 
     for Point(x, y) in path.into_iter() {
-        img.put_pixel(x, y, Luma { data: [128] });
+        img.put_pixel(x, y, Luma([128]));
     }
 
     img.save(out).map_err(|e| format!("{}", e))?;
