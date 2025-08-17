@@ -1,12 +1,10 @@
 #![warn(trivial_casts)]
 
-extern crate image;
-
 use image::GrayImage;
 
 mod a_star;
 
-pub use a_star::*;
+pub use crate::a_star::*;
 
 pub type Unit = u32;
 

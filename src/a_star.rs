@@ -8,12 +8,7 @@ fn heuristic(p: &Point, goal: &Point) -> Unit {
     let &Point(x, y) = p;
     let &Point(i, j) = goal;
 
-    pos_diff(i, x) + pos_diff(j, y)
-}
-
-#[inline]
-fn pos_diff(a: Unit, b: Unit) -> Unit {
-    if a > b { a - b } else { b - a }
+    i.abs_diff(x) + j.abs_diff(y)
 }
 
 struct AStarNode {
@@ -31,8 +26,9 @@ impl PartialEq for AStarNode {
 impl Eq for AStarNode {}
 
 impl PartialOrd for AStarNode {
+    #[inline]
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        other.f_cost.partial_cmp(&self.f_cost)
+        Some(self.cmp(other))
     }
 }
 
@@ -43,8 +39,8 @@ impl Ord for AStarNode {
 }
 
 pub fn solve(maze: &Maze) -> Option<(Unit, Vec<Point>)> {
-    let start = maze.get_entrance().into();
-    let end = maze.get_exit().into();
+    let start = maze.get_entrance();
+    let end = maze.get_exit();
 
     let mut closed_set = HashMap::<Point, (Point, Unit)>::new();
     let mut open_set = BinaryHeap::new();
@@ -68,12 +64,10 @@ pub fn solve(maze: &Maze) -> Option<(Unit, Vec<Point>)> {
         }
 
         // If this node already exists with a lower G cost, skip it
-        if let Some(&(_, g)) = closed_set.get(&point) {
-            if g_cost > g {
-                continue;
-            }
+        if let Some(&(_, g)) = closed_set.get(&point) && g_cost > g {
+            continue;
         }
-        for neighbour in point.neighbours(&maze) {
+        for neighbour in point.neighbours(maze) {
             let g_cost = g_cost + 1;
 
             match closed_set.entry(neighbour.clone()) {

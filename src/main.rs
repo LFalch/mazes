@@ -1,8 +1,5 @@
 #![warn(trivial_casts)]
 
-extern crate image;
-extern crate mazes;
-
 use std::{env, fmt};
 use std::path::Path;
 use std::time::{Instant, Duration};
