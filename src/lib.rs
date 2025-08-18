@@ -1,8 +1,11 @@
 #![warn(trivial_casts)]
 
+use std::ops::{Add, Sub};
+
 use image::GrayImage;
 
 mod a_star;
+pub mod generate;
 
 pub use crate::a_star::*;
 
@@ -72,8 +75,51 @@ pub struct Point(pub Unit, pub Unit);
 
 impl Point {
     pub fn neighbours(&self, maze: &Maze) -> impl Iterator<Item=Point> {
-        [Point(self.0 + 1, self.1), Point(self.0, self.1 + 1), Point(self.0 - 1, self.1), Point(self.0, self.1 - 1)]
+        [Point(self.0 + 1, self.1), Point(self.0, self.1 + 1), Point(self.0.wrapping_sub(1), self.1), Point(self.0, self.1.wrapping_sub(1))]
             .into_iter()
             .filter(|&p| maze.is_walkable(p))
+    }
+    #[inline]
+    pub fn neighbour_points(self) -> impl Iterator<Item=Point> {
+        [Point(self.0 + 1, self.1), Point(self.0, self.1 + 1), Point(self.0 - 1, self.1), Point(self.0, self.1 - 1)]
+            .into_iter()
+    }
+    pub const fn is_edge(self, w: u32, h: u32) -> bool {
+        self.0 == 0 || self.0 >= w - 1 || self.1 == 0 || self.1 >= h - 1
+    }
+}
+#[derive(Hash, Ord, Eq, PartialEq, PartialOrd, Debug, Clone, Copy)]
+pub struct Vect(pub Unit, pub Unit);
+impl Sub for Point {
+    type Output = Vect;
+    #[inline]
+    fn sub(self, rhs: Self) -> Self::Output {
+        Vect(self.0 - rhs.0, self.1 - rhs.1)
+    }
+}
+impl Sub for Vect {
+    type Output = Self;
+    #[inline]
+    fn sub(self, rhs: Self) -> Self::Output {
+        Self(self.0 - rhs.0, self.1 - rhs.1)
+    }
+}
+impl Add for Vect {
+    type Output = Self;
+    #[inline]
+    fn add(self, rhs: Self) -> Self::Output {
+        Self(self.0 + rhs.0, self.1 + rhs.1)
+    }
+}
+impl Add<Vect> for Point {
+    type Output = Self;
+    fn add(self, rhs: Vect) -> Self::Output {
+        Self(self.0 + rhs.0, self.1 + rhs.1)
+    }
+}
+impl Sub<Vect> for Point {
+    type Output = Self;
+    fn sub(self, rhs: Vect) -> Self::Output {
+        Self(self.0 - rhs.0, self.1 - rhs.1)
     }
 }
